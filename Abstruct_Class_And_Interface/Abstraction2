@@ -1,0 +1,29 @@
+interface PlayableCharacter {
+    void play();
+}
+
+abstract class Fighter {
+    void attack() {
+        System.out.println("Attack with sword!");
+    }
+}
+
+class Hero implements PlayableCharacter {
+    public void play() {
+        System.out.println("Hero is playing the game.");
+    }
+}
+
+class Warrior extends Fighter {
+    // Inherits attack() method
+}
+
+public class Abstraction2 {
+    public static void main(String[] args) {
+        PlayableCharacter hero = new Hero();
+        hero.play();
+
+        Warrior warrior = new Warrior();
+        warrior.attack();
+    }
+}
