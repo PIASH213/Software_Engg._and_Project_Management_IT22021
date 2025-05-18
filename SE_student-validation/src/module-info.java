@@ -1,0 +1,2 @@
+module SE.student.validation {
+}
