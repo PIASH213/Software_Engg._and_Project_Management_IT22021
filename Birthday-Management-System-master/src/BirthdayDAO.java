@@ -4,70 +4,101 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BirthdayDAO {
+    private Connection getConnection() {
+        try {
+            return Database.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException("Database connection failed", e);
+        }
+    }
 
     public void addBirthday(Birthday b) {
-        try (Connection conn = Database.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("INSERT INTO birthday (name, birthdate) VALUES (?, ?)");
+        String sql = "INSERT INTO birthday (name, birthdate) VALUES (?, ?)";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, b.getName());
             ps.setDate(2, Date.valueOf(b.getBirthdate()));
             ps.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            handleSQLException("Error adding birthday", e);
         }
     }
 
     public void deleteBirthday(int id) {
-        try (Connection conn = Database.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("DELETE FROM birthday WHERE id = ?");
+        String sql = "DELETE FROM birthday WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            handleSQLException("Error deleting birthday", e);
         }
     }
 
     public List<Birthday> getAllBirthdays() {
         List<Birthday> list = new ArrayList<>();
-        try (Connection conn = Database.getConnection()) {
-            ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM birthday ORDER BY MONTH(birthdate), DAY(birthdate)");
+        String sql = "SELECT * FROM birthday ORDER BY MONTH(birthdate), DAY(birthdate)";
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                list.add(new Birthday(rs.getInt("id"), rs.getString("name"), rs.getDate("birthdate").toLocalDate()));
+                list.add(new Birthday(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getDate("birthdate").toLocalDate()
+                ));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            handleSQLException("Error getting birthdays", e);
         }
         return list;
     }
 
     public List<Birthday> searchByNameOrMonth(String query) {
         List<Birthday> list = new ArrayList<>();
-        try (Connection conn = Database.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement(
-                    "SELECT * FROM birthday WHERE name LIKE ? OR MONTHNAME(birthdate) LIKE ?");
+        String sql = "SELECT * FROM birthday WHERE name LIKE ? OR MONTHNAME(birthdate) LIKE ?";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + query + "%");
             ps.setString(2, "%" + query + "%");
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(new Birthday(rs.getInt("id"), rs.getString("name"), rs.getDate("birthdate").toLocalDate()));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new Birthday(
+                            rs.getInt("id"),
+                            rs.getString("name"),
+                            rs.getDate("birthdate").toLocalDate()
+                    ));
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            handleSQLException("Error searching birthdays", e);
         }
         return list;
     }
 
     public List<Birthday> getTodaysBirthdays() {
         List<Birthday> list = new ArrayList<>();
-        try (Connection conn = Database.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement(
-                    "SELECT * FROM birthday WHERE MONTH(birthdate) = MONTH(CURDATE()) AND DAY(birthdate) = DAY(CURDATE())");
-            ResultSet rs = ps.executeQuery();
+        String sql = "SELECT * FROM birthday " +
+                "WHERE MONTH(birthdate) = MONTH(CURRENT_DATE) " +
+                "AND DAY(birthdate) = DAY(CURRENT_DATE)";
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                list.add(new Birthday(rs.getInt("id"), rs.getString("name"), rs.getDate("birthdate").toLocalDate()));
+                list.add(new Birthday(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getDate("birthdate").toLocalDate()
+                ));
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            handleSQLException("Error getting today's birthdays", e);
         }
         return list;
+    }
+
+    private void handleSQLException(String message, SQLException e) {
+        System.err.println(message + ": " + e.getMessage());
+        e.printStackTrace();
     }
 }
