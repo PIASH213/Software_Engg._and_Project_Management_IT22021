@@ -39,7 +39,7 @@ public class Main extends Application {
         });
         root.getChildren().addAll(label, nameField, startBtn);
         primaryStage.setScene(new Scene(root, 400, 300));
-        primaryStage.setTitle("Chattogram Quiz Game");
+        primaryStage.setTitle("Quiz Game");
         primaryStage.show();
     }
 
